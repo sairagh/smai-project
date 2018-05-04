@@ -1,52 +1,4 @@
 function [K,option]=svmkernel(x,kernel,kerneloption,xsup,framematrix,vector,dual);
-
-% Usage  K=svkernel(x,kernel,kerneloption,xsup,frame,vector,dual);
-%
-% Returns the scalar product of the vectors x by using the
-% mapping defined by the kernel function or x and xsup
-% if the matrix xsup is defined
-%
-% Input
-% 
-% x		:input vectors
-% kernel 	: kernel function
-%		Type								Function					Option
-%		Polynomial						'poly'					Degree (<x,xsup>+1)^d
-%		Homogeneous polynomial		'polyhomog'				Degree <x,xsup>^d	
-%		Gaussian							'gaussian'				Bandwidth
-%		Heavy Tailed RBF				'htrbf'					[a,b]   %see Chappelle 1999	
-%		Mexican 1D Wavelet 			'wavelet'
-%		Frame kernel					'frame'					'sin','numerical'...	
-%
-%  kerneloption	: scalar or vector containing the option for the kernel
-% 'gaussian' : scalar gamma is identical for all coordinates
-%              otherwise is a vector of length equal to the number of 
-%              coordinate
-% 
-%
-% 'poly' : kerneloption is a scalar given the degree of the polynomial
-%          or is a vector which first element is the degree of the polynomial
-%           and other elements gives the bandwidth of each dimension.
-%          thus the vector is of size n+1 where n is the dimension of the problem.
-%
-%
-% xsup		: support vector
-%
-% ----- 1D Frame Kernel -------------------------- 
-%
-%  framematrix  frame elements for frame kernel
-%  vector       sampling position of frame elements
-%	dual 		  dual frame
-%  frame,vector and dual are respectively the matrices and the vector where the frame 
-%  elements have been processed. these parameters are used only in case
-%
-%
-%	see also svmreg,svmclass,svmval, kernelwavelet,kernelframe
-%
-
-% O4/O6/2000 A. Rakotomamonjy
-
-
 if nargin < 6
     vector=[];
     dual=[];
@@ -69,7 +21,7 @@ if isempty(xsup)
 end;
 [n1 n2]=size(x);
 [n n3]=size(xsup);
-ps  =  zeros(n1,n);			% produit scalaire
+ps  =  zeros(n1,n);			
 switch lower(kernel)
 case 'poly'
     
@@ -159,7 +111,7 @@ case 'gaussian'
     
     K = exp(-ps/2);
     
-case 'htrbf'    % heavy tailed RBF  %see Chappelle Paper%
+case 'htrbf'    
     b=kerneloption(2);
     a=kerneloption(1);
     for i=1:n
@@ -169,9 +121,7 @@ case 'htrbf'    % heavy tailed RBF  %see Chappelle Paper%
     
     K = exp(-ps);
     
-case 'gaussianslow'    %
-    %b=kerneloption(2);
-    %a=kerneloption(1);
+case 'gaussianslow'
     for i=1:n
         ps(:,i) = sum( abs((x - ones(n1,1)*xsup(i,:))).^2 ,2)./kerneloption.^2/2;
     end;

@@ -1,23 +1,4 @@
 function [xnew, lambda, pos,mu] = monqp(H,c,A,b,C,l,verbose,X,ps,xinit)
-% function [xnew, lambda, pos] = monqp(H,c,A,b,C,l,verbose,X,ps,xinit)
-%
-% min 1/2  x' H x - c' x                 
-%  x 
-% contrainte   A' x = b                    
-% 
-% et         0 <= x_i  <= C_i
-%
-% Crédits : J.P. Yvon (INSA de Rennes) pour l'algorithme
-%           O. Bodard (Clermont Ferrand) pour le debugage on line
-%
-%  S CANU - scanu@insa-rouen.fr
-%  Mai 2001
-
-
-
-%-------------------------------------------------------------------------- 
-%                                verifications 
-%-------------------------------------------------------------------------- 
 [n,d] = size(H); 
 [nl,nc] = size(c); 
 [nlc,ncc] = size(A); 
@@ -42,11 +23,11 @@ if ncc ~= nlb
     error('A'' and b  must have the same number of row'); 
 end 
 
-if nargin < 5		% default value for the regularisation parameter 
+if nargin < 5		 
     l = 0;				 
 end; 
 
-if nargin < 6		% default value for the display parameter 
+if nargin < 6		 
     verbose = 0;				 
 end; 
 if  size(C,1)~=nl
@@ -58,15 +39,7 @@ if exist('xinit','var')~=1
 end;
 
 
-fid = 1; %default value, curent matlab window 
-%-------------------------------------------------------------------------- 
-
-
-%-------------------------------------------------------------------------- 
-%                       I N I T I A L I S A T I O N  
-%-------------------------------------------------------------------------- 
-
-OO = zeros(ncc);
+fid = 1; OO = zeros(ncc);
 H = H+l*eye(length(H)); % preconditionning
 
 xnew = -1*ones(size(C));ness = 0;     
@@ -120,18 +93,15 @@ end;
 
 
 
-% Modification for QP without equality constraints
+
 if sum(A==0)
     ncc=0;
 end;
 
 
-[U,testchol] = chol(H); % Test definite positiveness of H
+[U,testchol] = chol(H); 
 firstchol=1;
 
-%-------------------------------------------------------------------------- 
-%                            M A I N   L O O P 
-%-------------------------------------------------------------------------- 
 
 Jold = 10000000000000000000;  
 %C = Jold; % for the cost function
@@ -172,29 +142,12 @@ while STOP ~= 1
     
     
     
-    % nouvele resolution du système
-    
-    % newsol = [H(ind,ind)+l*eye(length(ind)) A(ind,:);A(ind,:)' OO]\[c(ind) ; b];
-    % xnew = newsol(1:length(ind));
-    % lambda = newsol(length(ind)+1:length(newsol));
-    
+   
     ce = c(ind);
     be = b;
     
-    %     if (isempty(indsuptot)==0) % if NOT empty
-    %         keyboard
-    %         %     ce= ce - C*(sum(H(ind,indsuptot),2)+sum(H(indsuptot,ind),1)');%    min     x'Hx + c'x
-    %         ce= ce - C*(sum(H(ind,indsuptot),2));%                              min     x'Hx + c'x
-    %         be= be - C*sum(A(indsuptot,:),1)';                            %    with    Ax=b
-    %     end 
-    
-    
-    %03/01/2003
-    if (isempty(indsuptot)==0) % if NOT empty
+      if (isempty(indsuptot)==0) % if NOT empty
         
-        %
-        %  on remplace tout les x qui sont indsuptot par C
-        %
         
         Cmat= ones(length(ind),1)*(C(indsuptot)'); 
         if size(ce)~= size(sum( Cmat.*H(ind,indsuptot),2))
@@ -208,50 +161,23 @@ while STOP ~= 1
     
     
     
-    %  keyboard
-    % auxH=H(ind,ind);
-    % [U,testchol] = chol(auxH); %
+
+    
     At=A(ind,:)';
     Ae=A(ind,:);
     
     
     if testchol==0
         auxH=H(ind,ind);
-        [U,testchol] = chol(auxH); % It would be better to use an updated choleski
-        %------------------------------------------------------------------
-%         if length(ind)>5
-%             keyboard
-%         if firstchol   
-%             Ub=chol(auxH)'; 
-%             firstchol=0;
-%         else
-%             
-%             if directioncholupdate==1
-%                 Ubr = updatechol(Ub,indexcholupdate-1,H(varcholupdate,:),directioncholupdate);
-%             else
-%                 Ubr = updatechol(Ub,indexcholupdate,[],directioncholupdate);
-%             end;
-%            
-%             max(max(abs(Ub-U)))
-%         end;
-%     end
-        %------------------------------------------------------------------
+        [U,testchol] = chol(auxH); 
 
         M = At*(U\(U'\Ae));
         d = U\(U'\ce);
-        d = (At*d - be);   % second membre  (homage au gars OlgaZZZZZZ qui nous a bien aidé)
-        % On appelle le gc fabuleux de mister OlgaZZZ Hoduc
-        % lambdastart = rand([m,1]);
-        % [lambda] = gradconj(lambdastart,M*M,M*d,MaxIterZZZ,tol,1000);
         if rcond(M)<l
             M=M+l*eye(size(M));
         end;
         lambda = M\d;
-        % On reconstitue le vecteur en résolvant le système linéaire Hx = c-Alambda
-        % size(lambda)
-        % size(Ae)
-        %      keyboard
-        %        xnew = U\(Ut\(ce-Ae*lambda));
+       
         xnew=auxH\(ce-Ae*lambda);
     else
         
@@ -269,16 +195,13 @@ while STOP ~= 1
         xnew=auxH\(ce-Ae*lambda);
     end;
     
-    %-------------------------------------------------------------------------------------------------------
+   
     
     [minxnew minpos]=min(xnew);
     
     
     if (sum(xnew< 0) > 0 | sum(xnew > C(ind)) > 0)   &  length(ind) > ncc  %  03/01/2002 AR
-        %  cette condition est utile  pour le
-        % semi param 
-        % on projette dans le domaine admissible et on sature la contrainte associée
-        %-------------------------------------------------------------------------
+       
         d = (xnew - x)+l;                % projection direction
         indad = find(xnew < 0); 
         indsup = find(xnew > C(ind) );                      %% 03/01/2002
@@ -328,19 +251,19 @@ while STOP ~= 1
         [mmS mposS]=min(-mu(indsuptot));  %keyboard
         
         if ((~isempty(mm) & (mm < -sqrt(eps)))  | (~isempty(mmS) & (mmS <  -sqrt(eps)))) & nbiter< nbitermax
-            if isempty(indsuptot) | (mm < mmS)             % il faut rajouter une variable
-                ind = sort([ind ; indsat(mpos)]);        % on elimine une contrainte de type x=0
+            if isempty(indsuptot) | (mm < mmS)             
+                ind = sort([ind ; indsat(mpos)]);       
                 x = xt(ind);
                 indexcholupdate=find(ind==indsat(mpos));
                 varcholupdate=indsat(mpos);
                 directioncholupdate=1; % remove
             else
-                ind = sort([ind ; indsuptot(mposS)]);  % on elimine la contrainte sup si necessaire
-                x = xt(ind);                           % on elimine une contrainte de type x=C
+                ind = sort([ind ; indsuptot(mposS)]);  
+                x = xt(ind);                           
                 indexcholupdate=find(ind==indsuptot(mposS));
                 varcholupdate=indsuptot(mposS);
                 indsuptot(mposS)=[];
-                directioncholupdate=1; % remove
+                directioncholupdate=1; 
             end
         else
             
@@ -359,8 +282,5 @@ while STOP ~= 1
     end
 end
 
-%-------------------------------------------------------------------------- 
-%                        E N D   M A I N   L O O P 
-%-------------------------------------------------------------------------- 
 
 
